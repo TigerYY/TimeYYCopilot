@@ -27,14 +27,22 @@
 ## 核心能力
 
 - **多周期加密货币预测**
-  - 支持 5m / 15m / 1h / 4h 的 BTCUSDT / ETHUSDT 等主流交易对
+  - 支持 5m / 15m / 1h / 4h / 1d 的 BTCUSDT / ETHUSDT 等主流交易对
   - 利用 TimeCopilot 统一调用传统统计模型 + ML + 神经网络 + TSFM
   - 自动进行模型选择与交叉验证，并输出可解释的分析报告
+  - 支持实时数据获取与预测
 
 - **交易策略 & 回测**
   - 基于未来数根 K 线的预测轨迹，生成 BUY/SELL/HOLD 信号
   - 支持手续费、滑点、仓位控制等基础要素
   - 可以在历史区间上做完整回测，输出资金曲线与关键指标
+  - 历史回测预测 vs 实际价格对比分析
+
+- **图形化界面**
+  - 完整的 Streamlit Web 界面，无需编程即可使用
+  - 数据获取、预测、回测、分析一体化流程
+  - 实时预测功能，基于最新 K 线数据
+  - 丰富的可视化图表和性能指标展示
 
 - **面向实盘的架构设计**
   - 数据源、预测服务、策略引擎、执行引擎分层解耦
@@ -91,14 +99,51 @@ uv sync  # 或者使用: pip install -e .
 
 ### 2. 配置环境变量
 
+在项目根目录创建 `.env` 文件，或使用环境变量：
+
 ```bash
-export OPENAI_API_KEY="your-openai-key"
+# DashScope API Key（推荐，用于 TimeCopilot）
+DASHSCOPE_API_KEY=your-dashscope-api-key
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_MODEL=qwen-turbo
+
+# 或使用 OpenAI API Key
+OPENAI_API_KEY=your-openai-key
+
 # 可选：未来接入 Binance 实盘/实时数据时需要
-export BINANCE_API_KEY="your-binance-key"
-export BINANCE_API_SECRET="your-binance-secret"
+BINANCE_API_KEY=your-binance-key
+BINANCE_API_SECRET=your-binance-secret
 ```
 
-### 3. 运行示例（回测）
+### 3. 启动图形化界面（推荐）
+
+**方式 1：使用启动脚本**
+```bash
+chmod +x start_crypto_ui.sh
+./start_crypto_ui.sh
+```
+
+**方式 2：直接运行 Streamlit**
+```bash
+streamlit run crypto_ui_app.py
+```
+
+应用会自动在浏览器中打开，默认地址：`http://localhost:8501`
+
+#### 图形化界面功能
+
+TimeYYCopilot 提供了完整的图形化界面，包含以下功能模块：
+
+- **📥 数据获取**：从 Binance 获取历史 K 线数据，支持多种交易对和周期
+- **🔮 价格预测**：使用 TimeCopilot 进行多模型预测，自动选择最佳模型
+- **💹 策略回测**：基于预测结果进行策略回测，生成资金曲线和交易记录
+- **📊 结果分析**：查看详细的性能指标和分析报告
+- **⏱️ 实时回预测**：历史回测预测 vs 实际价格对比，以及未来预测
+- **🔄 实时预测**：基于最新 K 线数据进行实时预测
+
+详细使用说明请参考 [CRYPTO_UI_README.md](./CRYPTO_UI_README.md)
+
+### 4. 命令行运行示例（回测）
 
 计划提供类似以下脚本 / Notebook（示意）：
 
@@ -133,22 +178,29 @@ python -m crypto_backtest.run_btc_eth_example \
 
 ---
 
-## Roadmap（计划）
+## Roadmap
 
 1. **数据层**
-   - [ ] Binance 历史 K 线拉取脚本（多周期）
+   - [x] Binance 历史 K 线拉取脚本（多周期）
+   - [x] 实时 K 线数据获取
    - [ ] 本地数据落地（Parquet / SQLite / DuckDB）
 2. **适配层**
-   - [ ] 将 K 线数据标准化为 TimeCopilot 所需的 `unique_id, ds, y`
+   - [x] 将 K 线数据标准化为 TimeCopilot 所需的 `unique_id, ds, y`
    - [ ] 多资产 / 多周期统一管理
 3. **预测层**
-   - [ ] 基于 TimeCopilot 的多模型预测（5m / 15m / 1h / 4h）
-   - [ ] 结果缓存与可视化（价格 + 预测曲线）
+   - [x] 基于 TimeCopilot 的多模型预测（5m / 15m / 1h / 4h）
+   - [x] 结果缓存与可视化（价格 + 预测曲线）
+   - [x] 实时预测功能
+   - [x] 历史回测预测对比
 4. **策略 & 回测层**
-   - [ ] 简单趋势策略回测（单币种）
+   - [x] 简单趋势策略回测（单币种）
+   - [x] 资金曲线与指标报表
    - [ ] 多币种 / 多周期组合策略
-   - [ ] 资金曲线与指标报表
-5. **执行层**
+5. **用户界面**
+   - [x] Streamlit 图形化界面
+   - [x] 数据获取、预测、回测、分析完整流程
+   - [x] 实时预测与回预测功能
+6. **执行层**
    - [ ] 半自动下单（生成"建议单"，人工确认）
    - [ ] 自动化下单的风险控制与限额机制
 

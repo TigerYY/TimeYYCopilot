@@ -30,6 +30,7 @@ class BacktestResult:
     total_return: float
     trades: List[Trade]
     equity_curve: pd.DataFrame
+    signal_stats: dict = None  # 信号统计信息（可选）
 
 
 class SimpleBacktestEngine:
@@ -98,16 +99,23 @@ class SimpleBacktestEngine:
         forecast_col = forecast_cols[0]
         forecast_prices = forecast_data_copy.set_index("ds")[forecast_col]
 
+        # 确保历史数据的时间列是 datetime 类型
+        historical_data = historical_data.copy()
+        historical_data["open_time"] = pd.to_datetime(historical_data["open_time"])
+        
+        # 信号统计（用于调试）
+        signal_stats = {"BUY": 0, "SELL": 0, "HOLD": 0, "LOW_CONFIDENCE": 0, "NO_TREND": 0}
+        
         # 遍历历史数据，在每个时间点生成信号并执行
+        # 注意：预测数据是未来的，我们在每个历史时间点使用完整的预测数据来生成信号
         for idx, row in historical_data.iterrows():
             current_price = row[price_column]
-            current_time = pd.to_datetime(row["open_time"])
+            current_time = row["open_time"]
 
-            # 获取到当前时间为止的预测数据
-            available_forecast = forecast_prices[forecast_prices.index <= current_time]
-
-            if len(available_forecast) < 2:
-                # 预测数据不足，跳过
+            # 使用完整的预测数据来生成信号（预测是未来的，但我们用它来判断趋势）
+            # 如果预测数据为空，跳过
+            if forecast_prices.empty or len(forecast_prices) < 2:
+                signal_stats["HOLD"] += 1
                 equity_curve_data.append(
                     {
                         "timestamp": current_time,
@@ -118,12 +126,25 @@ class SimpleBacktestEngine:
                 )
                 continue
 
-            # 生成信号
+            # 生成信号（使用完整的预测数据）
             signal = self.strategy.generate_signal(
                 historical_prices[: idx + 1],
-                available_forecast,
+                forecast_prices,  # 使用完整的预测数据
                 current_price,
             )
+            
+            # 统计信号
+            signal_stats[signal.action] += 1
+            if signal.action == "HOLD":
+                if signal.confidence < self.strategy.min_confidence:
+                    signal_stats["LOW_CONFIDENCE"] += 1
+                else:
+                    # 检查是否因为趋势不足而 HOLD
+                    forecast_start = forecast_prices.iloc[0]
+                    forecast_end = forecast_prices.iloc[-1]
+                    forecast_change = (forecast_end - forecast_start) / forecast_start
+                    if abs(forecast_change) < self.strategy.trend_threshold:
+                        signal_stats["NO_TREND"] += 1
 
             # 执行交易
             if signal.action == "BUY" and position == 0:
@@ -195,5 +216,6 @@ class SimpleBacktestEngine:
             total_return=total_return,
             trades=trades,
             equity_curve=equity_curve,
+            signal_stats=signal_stats,  # 添加信号统计
         )
 

@@ -114,3 +114,30 @@ class BinanceDataFetcher:
 
         return df
 
+    def fetch_latest_klines(
+        self,
+        symbol: str,
+        interval: str,
+        limit: int = 1000,
+    ) -> pd.DataFrame:
+        """
+        获取最新的 K线数据（用于实时预测）.
+        
+        此方法不指定 end_time，Binance API 会自动返回到最新的K线数据。
+
+        Args:
+            symbol: 交易对，如 'BTCUSDT'
+            interval: K线周期，如 '5m', '15m', '1h', '4h', '1d'
+            limit: 需要获取的K线数量（最大1000）
+
+        Returns:
+            DataFrame with columns: open_time, open, high, low, close, volume, ...
+        """
+        return self.fetch_klines(
+            symbol=symbol,
+            interval=interval,
+            start_time=None,
+            end_time=None,
+            limit=limit,
+        )
+
