@@ -1402,13 +1402,32 @@ with tab6:
                     }
                     base_seasonality = seasonality_map.get(realtime_interval)
                     data_length = len(tc_data)
+                    
+                    # 对于1h周期，确保有足够的数据量来设置seasonality=24
+                    # 如果数据量不足，至少保持一个合理的seasonality值，而不是设为None
                     if base_seasonality and data_length < base_seasonality * 2:
                         if data_length < base_seasonality:
-                            seasonality = None
+                            # 数据量太少，但至少设置一个较小的seasonality，避免完全平线
+                            # 对于1h周期，如果数据量>=12（半天），可以设置seasonality=12
+                            if realtime_interval == "1h" and data_length >= 12:
+                                seasonality = 12  # 半天周期
+                            else:
+                                seasonality = None
                         else:
                             seasonality = min(base_seasonality, data_length // 2)
                     else:
                         seasonality = base_seasonality
+                    
+                    # 调试信息：显示频率和季节性设置
+                    if realtime_interval == "1h":
+                        st.info(
+                            f"🔍 1h周期调试信息：\n"
+                            f"- 频率: {freq}\n"
+                            f"- 数据量: {data_length} 条\n"
+                            f"- 基础季节性: {base_seasonality}\n"
+                            f"- 最终季节性: {seasonality}\n"
+                            f"- 数据时间范围: {tc_data['ds'].min()} 到 {tc_data['ds'].max()}"
+                        )
 
                     # 创建模型与 TimeCopilot
                     model = create_dashscope_model()

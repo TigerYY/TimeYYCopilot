@@ -35,6 +35,18 @@ class BinanceKlineAdapter:
             }
         )
 
+        # 确保 ds 列是 datetime 类型
+        result["ds"] = pd.to_datetime(result["ds"])
+        
+        # 按时间排序
+        result = result.sort_values(by="ds")
+        
+        # 去除重复的时间戳（保留最后一个）
+        result = result.drop_duplicates(subset=["ds"], keep="last")
+        
+        # 重置索引
+        result = result.reset_index(drop=True)
+
         return result
 
     @staticmethod
@@ -54,7 +66,7 @@ class BinanceKlineAdapter:
             "5m": "5T",
             "15m": "15T",
             "30m": "30T",
-            "1h": "1H",
+            "1h": "H",  # 使用 "H" 而不是 "1H"，确保与模型兼容
             "2h": "2H",
             "4h": "4H",
             "6h": "6H",
